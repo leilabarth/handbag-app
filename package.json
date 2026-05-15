@@ -1,0 +1,14 @@
+{
+  "name": "handbag-collection-manager",
+  "version": "1.0.0",
+  "description": "Handbag collection manager with Google Sheets sync",
+  "private": true,
+  "scripts": {
+    "build": "npm install",
+    "start": "echo 'Server running'"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.0.0",
+    "googleapis": "^118.0.0"
+  }
+}

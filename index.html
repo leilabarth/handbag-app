@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handbag Collection Manager</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f3f4f6;
+            padding: 20px;
+        }
+        #root {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const HandbagCollectionForm = () => {
+          const [formData, setFormData] = React.useState({
+            bagName: 'Medium Sukey Tote Bag',
+            brand: 'Gucci',
+            dateCode: '233974 525040',
+            yearCreated: '',
+            yearAcquired: '2026',
+            conditionCurrent: 'Excellent',
+            leatherType: 'Diamante Jacquard Canvas with leather handles and trim',
+            color: 'Beige Diamante Canvas with Tan Leather Trim',
+            conditionUponReceipt: 'Wrinkling/relaxation and overall misshaping; light scratches/residue to hardware; wrinkling throughout canvas; creases to leather trim; interior residue spots/staining, lint and dust accumulation; residual storage odor',
+            accessories: ['Dust Bag', 'Bag Charm', 'Strap'],
+            dimensions: '13.5" W x 11.0" H x 7.0" D, 7" handle drop',
+            directPurchase: 'No',
+            purchaseSource: 'Everything but the House (EBTH)',
+            purchaseDate: '2026-04-15',
+            originalSourceURL: 'https://www.ebth.com/items/14420360-gucci-medium-sukey-tote-bag-in-diamante-jacquard-canvas-and-leather',
+            authenticationURL: '',
+            referenceURL: '',
+            purchasePrice: '240.00',
+            tax: '24.37',
+            shippingFees: '53.03',
+            totalCost: '317.40',
+            resaleLow: '550',
+            resaleHigh: '600',
+            resaleAverage: '575',
+            authenticated: 'Yes',
+            certificateOfAuth: false,
+            authenticationNotes: 'EBTH authenticated; guarantee on file',
+            restorationStatus: 'In Progress',
+            restorationWork: ['Conditioned with Bick 4', 'Conditioned with mink oil', 'Reshaping'],
+            restorationIncreasesValue: true,
+            currentProjects: 'Reshaping zipper closure with heat and leather conditioner',
+            internalNotes: 'Item arrived in very good condition; needed minor interior spot cleaning; zipper wonky and needs reshaping',
+          });
+
+          const [message, setMessage] = React.useState('');
+          const [loading, setLoading] = React.useState(false);
+          const [bags, setBags] = React.useState([]);
+
+          const handleInputChange = (e) => {
+            const { name, value, type, checked } = e.target;
+            setFormData(prev => ({
+              ...prev,
+              [name]: type === 'checkbox' ? checked : value
+            }));
+          };
+
+          const handleCheckboxGroup = (name, value, checked) => {
+            setFormData(prev => ({
+              ...prev,
+              [name]: checked
+                ? [...(prev[name] || []), value]
+                : (prev[name] || []).filter(item => item !== value)
+            }));
+          };
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            setMessage('');
+
+            try {
+              const response = await fetch('/api/add-bag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  data: {
+                    bagId: `BAG-${Date.now()}`,
+                    ...formData,
+                    accessories: formData.accessories.join(', '),
+                    restorationWork: formData.restorationWork.join(', '),
+                    timestamp: new Date().toISOString(),
+                  }
+                })
+              });
+
+              if (response.ok) {
+                setMessage('✓ Bag added to collection and synced to Google Sheets!');
+                const result = await response.json();
+                setBags(prev => [...prev, { ...formData, bagId: result.bagId }]);
+              } else {
+                setMessage('✗ Error adding bag');
+              }
+            } catch (error) {
+              setMessage(`✗ Error: ${error.message}`);
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          return (
+            <div style={{ maxWidth: '1000px', margin: '0 auto', background: 'white', padding: '30px', borderRadius: '12px' }}>
+              <h1 style={{ marginBottom: '8px' }}>Handbag Collection Manager</h1>
+              <p style={{ color: '#666', marginBottom: '20px' }}>Complete inventory system with Google Sheets sync</p>
+
+              {message && (
+                <div style={{
+                  padding: '12px',
+                  marginBottom: '20px',
+                  borderRadius: '6px',
+                  background: message.includes('✓') ? '#f0fdf4' : '#fef2f2',
+                  border: `1px solid ${message.includes('✓') ? '#86efac' : '#fca5a5'}`,
+                  color: message.includes('✓') ? '#166534' : '#991b1b'
+                }}>
+                  {message}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit}>
+                
+                {/* Section 1: Identity & Basics */}
+                <fieldset style={{ marginBottom: '20px', border: 'none' }}>
+                  <legend style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Identity & Basics</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Bag Name / Model *</label>
+                      <input
+                        type="text"
+                        name="bagName"
+                        value={formData.bagName}
+                        onChange={handleInputChange}
+                        required
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Brand *</label>
+                      <input
+                        type="text"
+                        name="brand"
+                        value={formData.brand}
+                        onChange={handleInputChange}
+                        required
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Date Code / Serial Number</label>
+                      <input
+                        type="text"
+                        name="dateCode"
+                        value={formData.dateCode}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Year / Season Created</label>
+                      <input
+                        type="text"
+                        name="yearCreated"
+                        value={formData.yearCreated}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* Section 2: Physical Characteristics */}
+                <fieldset style={{ marginBottom: '20px', border: 'none' }}>
+                  <legend style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Physical Characteristics</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Year Acquired</label>
+                      <input
+                        type="number"
+                        name="yearAcquired"
+                        value={formData.yearAcquired}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Condition (Current)</label>
+                      <select
+                        name="conditionCurrent"
+                        value={formData.conditionCurrent}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      >
+                        <option>Like New</option>
+                        <option>Excellent</option>
+                        <option>Good</option>
+                        <option>Fair</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Leather Type</label>
+                      <input
+                        type="text"
+                        name="leatherType"
+                        value={formData.leatherType}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Color</label>
+                      <input
+                        type="text"
+                        name="color"
+                        value={formData.color}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Condition Upon Receipt</label>
+                    <textarea
+                      name="conditionUponReceipt"
+                      value={formData.conditionUponReceipt}
+                      onChange={handleInputChange}
+                      rows="3"
+                      style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    />
+                  </div>
+                </fieldset>
+
+                {/* Section 3: Provenance & Purchase (condensed for space) */}
+                <fieldset style={{ marginBottom: '20px', border: 'none' }}>
+                  <legend style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Provenance & Purchase</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Purchase Source</label>
+                      <input
+                        type="text"
+                        name="purchaseSource"
+                        value={formData.purchaseSource}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Purchase Date</label>
+                      <input
+                        type="date"
+                        name="purchaseDate"
+                        value={formData.purchaseDate}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Purchase Price</label>
+                      <input
+                        type="number"
+                        name="purchasePrice"
+                        value={formData.purchasePrice}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Total Cost</label>
+                      <input
+                        type="number"
+                        name="totalCost"
+                        value={formData.totalCost}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Resale Average</label>
+                      <input
+                        type="number"
+                        name="resaleAverage"
+                        value={formData.resaleAverage}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* Section 4: Authentication */}
+                <fieldset style={{ marginBottom: '20px', border: 'none' }}>
+                  <legend style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Authentication</legend>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Authenticated?</label>
+                    <select
+                      name="authenticated"
+                      value={formData.authenticated}
+                      onChange={handleInputChange}
+                      style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    >
+                      <option>Yes</option>
+                      <option>No</option>
+                      <option>In Progress</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Authentication Notes</label>
+                    <textarea
+                      name="authenticationNotes"
+                      value={formData.authenticationNotes}
+                      onChange={handleInputChange}
+                      rows="2"
+                      style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    />
+                  </div>
+                </fieldset>
+
+                {/* Section 5: Restoration */}
+                <fieldset style={{ marginBottom: '20px', border: 'none' }}>
+                  <legend style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Restoration & Maintenance</legend>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Restoration Status</label>
+                    <select
+                      name="restorationStatus"
+                      value={formData.restorationStatus}
+                      onChange={handleInputChange}
+                      style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    >
+                      <option>Not Applicable</option>
+                      <option>Not Started</option>
+                      <option>In Progress</option>
+                      <option>Complete</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '6px' }}>Current Projects</label>
+                    <textarea
+                      name="currentProjects"
+                      value={formData.currentProjects}
+                      onChange={handleInputChange}
+                      rows="2"
+                      style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    />
+                  </div>
+                </fieldset>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    padding: '12px 24px',
+                    background: '#0066cc',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    opacity: loading ? 0.6 : 1
+                  }}
+                >
+                  {loading ? 'Adding Bag...' : 'Add Bag to Collection'}
+                </button>
+              </form>
+
+              {bags.length > 0 && (
+                <div style={{ marginTop: '40px' }}>
+                  <h2>Collection ({bags.length} bags)</h2>
+                  <div style={{ display: 'grid', gap: '16px', marginTop: '16px' }}>
+                    {bags.map((bag, i) => (
+                      <div key={i} style={{ background: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
+                        <h3>{bag.bagName}</h3>
+                        <p><strong>Brand:</strong> {bag.brand}</p>
+                        <p><strong>Condition:</strong> {bag.conditionCurrent}</p>
+                        <p><strong>Total Cost:</strong> ${bag.totalCost}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        ReactDOM.render(<HandbagCollectionForm />, document.getElementById('root'));
+    </script>
+</body>
+</html>
